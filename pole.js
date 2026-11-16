@@ -136,7 +136,10 @@ export function initPole({ canvas, slider, clock, play, read, getTerrain, getSit
     read.textContent = `Sun ${Math.abs(el).toFixed(1)}° ${el >= 0 ? "above" : "below"} the horizon at the pole. ` + (lines.length ? (lit.length ? "In sunlight: " + lit.join(", ") + ". " : "No chosen site is in sunlight. ") + (dark.length ? "In shadow: " + dark.join(", ") + "." : "") : "");
     canvas.setAttribute("aria-label", `South polar terrain with real shadows, ${fmt(t)}. ${read.textContent}`);
   }
+  let visible = true, stale = false;   // the disc is not redrawn while it is off screen (the ledger drag would otherwise pay for it)
+  if ("IntersectionObserver" in window) new IntersectionObserver(en => { visible = en.some(e => e.isIntersecting); if (visible && stale) { stale = false; frame(); } }).observe(canvas);
   function frame() {
+    if (!visible) { stale = true; return; }
     if (busy) { queued = true; return; }
     busy = true;
     requestAnimationFrame(() => { try { draw(); } finally { busy = false; if (queued) { queued = false; frame(); } } });
