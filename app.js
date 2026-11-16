@@ -1,5 +1,7 @@
 import { setEphemeris, ephemerisRange, vectorsAt, siteFrame, skyAt, maskAt, R_MOON, R_SUN } from "./engine.js";
 import { Terrain, unpack } from "./terrain.js";
+import { initPole } from "./pole.js";
+let pole = null;
 
 const $ = (s, el = document) => el.querySelector(s);
 const DAY = 86400000, HOUR = 3600000, DEG = Math.PI / 180;
@@ -48,7 +50,13 @@ async function boot() {
   readHash();
   if (!state.selected.length) state.selected = ["connecting-ridge", "malapert-massif", "mons-mouton", "nobile-rim", "haworth"];
   if (!hadDate) firstViableDate();
-  buildSiteList(); wire(); syncInputs(); render();
+  buildSiteList(); wire(); syncInputs();
+  pole = initPole({
+    canvas: $("#pole"), slider: $("#poleT"), clock: $("#poleClock"), play: $("#polePlay"), read: $("#poleRead"),
+    getTerrain: loadTerrain, getSites: () => state.selected.map(id => state.byId.get(id)).filter(Boolean),
+    onStatus: m => { if (m) $("#poleRead").textContent = m; },
+  });
+  render();
 }
 // Open on a landing date where at least two of the default sites meet the limits, so the first screen shows a real comparison.
 function firstViableDate() {
@@ -133,6 +141,7 @@ function render() {
     return;
   }
   updateLedger(); renderSky(); scheduleMap();
+  if (pole) { pole.setBase(state.date); pole.refresh(); }
 }
 
 // ---------- the ledger: one line of light per site ----------

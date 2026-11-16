@@ -12,14 +12,16 @@
   --color-alert: oklch(52% 0.2 32); --color-alert-light: oklch(70% 0.19 35);
   --color-space: oklch(13% 0.01 265); --color-space-2: oklch(20% 0.01 265); --color-space-ink: oklch(94% 0.004 90); --color-space-muted: oklch(72% 0.008 265);
   --color-error: oklch(52% 0.19 27);
-  --font-display: "Antonio", "Arial Narrow", sans-serif;
+  --color-lit: oklch(80% 0.09 82); --color-lit-hot: oklch(98% 0.03 95); --color-shade: oklch(10% 0.018 265); --color-shade-2: oklch(20% 0.035 258);
+  --font-display: "Source Serif 4", Georgia, serif;
   --font-body: "Albert Sans", ui-sans-serif, system-ui, sans-serif;
   --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px;
   --text-xs: 0.8125rem; --text-sm: 0.9375rem; --text-md: 1.0625rem; --text-lg: 1.25rem;
   --container: 1360px; --gutter: 32px; --radius: 3px; --rule: 1px;
   --dur-micro: 120ms; --dur-short: 220ms; --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
-@font-face { font-family:"Antonio"; src:url("fonts/Antonio-latin.woff2") format("woff2"); font-weight:100 700; font-style:normal; font-display:swap; }
+@font-face { font-family:"Source Serif 4"; src:url("fonts/SourceSerif4-latin.woff2") format("woff2"); font-weight:200 900; font-style:normal; font-display:swap; }
+@font-face { font-family:"Source Serif 4"; src:url("fonts/SourceSerif4-italic-latin.woff2") format("woff2"); font-weight:200 900; font-style:italic; font-display:swap; }
 @font-face { font-family:"Albert Sans"; src:url("fonts/AlbertSans-latin.woff2") format("woff2"); font-weight:300 800; font-style:normal; font-display:swap; }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -49,6 +51,24 @@ input, select { caret-color: var(--color-ink); }
 .bar-nav { display: flex; gap: var(--space-lg); }
 .bar-nav a { text-decoration: none; font-size: var(--text-sm); color: var(--color-space-muted); padding: var(--space-sm) 0; transition: color var(--dur-micro); }
 .bar-nav a:hover { color: var(--color-space-ink); }
+
+/* the pole: the one bold object on the page */
+.pole { background: var(--color-space); color: var(--color-space-ink); }
+.pole-in { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-xl); align-items: center; padding-block: var(--space-xl); min-height: calc(100svh - 52px); }
+.pole-copy { display: grid; gap: var(--space-lg); align-content: center; max-width: 34rem; }
+.pole h1 { font-size: clamp(2.1rem, 3.9vw, 3.4rem); line-height: 1.04; font-weight: 500; letter-spacing: -0.012em; }
+.pole-copy > p:not(.pole-read):not(.lede) { color: var(--color-space-muted); max-width: 46ch; }
+.pole-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm) var(--space-md); }
+.pole-ctl input[type=range] { flex: 1 1 10rem; min-width: 0; accent-color: var(--color-accent); }
+.pole-ctl .clock { margin-left: 0; font-size: var(--text-sm); color: var(--color-space-ink); }
+.pole button { background: var(--color-accent); color: var(--color-accent-ink); }
+.pole button:hover { background: var(--color-space-ink); }
+.pole :focus-visible { outline-color: var(--color-accent); }
+.pole-read { font-size: var(--text-sm); color: var(--color-space-ink); min-height: 4.5em; max-width: 46ch; }
+.pole .lede { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-lg); margin-top: 0; }
+.pole .lede a:hover { text-decoration-color: var(--color-space-ink); }
+.pole-cv { width: 100%; max-width: min(100%, calc(100svh - 52px - 2 * var(--space-xl))); aspect-ratio: 1; justify-self: center; touch-action: pan-y; cursor: ew-resize; display: block; border-radius: 50%; }
+@media (max-width: 62rem) { .pole-in { grid-template-columns: minmax(0, 1fr); min-height: 0; } .pole-cv { order: -1; max-width: 100%; } .pole-copy { max-width: none; } }
 
 /* masthead */
 .top { padding-top: var(--space-xl); }

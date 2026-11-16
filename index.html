@@ -9,7 +9,6 @@
 <meta property="og:description" content="If the landing slips, what happens to power and the link home? Sun and Earth over real LRO terrain. Built for NASA Space Apps 2026.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23151618'/%3E%3Crect x='3' y='11' width='26' height='10' fill='%23e8b923'/%3E%3C/svg%3E">
-<link rel="preload" href="fonts/Antonio-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -25,11 +24,27 @@
 </header>
 
 <main>
+  <section class="pole" aria-labelledby="h-pole">
+    <div class="wrap pole-in">
+      <div class="pole-copy">
+        <h1 id="h-pole">At the Moon’s south pole the Sun never climbs past 1.5°.</h1>
+        <p>So every ridge throws a shadow for days. These shadows are cast from NASA laser-altimeter terrain by the Sun’s real position. Drag the disc, or play one lunar day.</p>
+        <div class="pole-ctl">
+          <button id="polePlay" type="button">Play a lunar day</button>
+          <input type="range" id="poleT" min="0" max="720" value="360" aria-label="Time, about one lunar day around your landing date">
+          <output id="poleClock" class="clock"></output>
+        </div>
+        <p class="pole-read" id="poleRead" role="status">Loading NASA terrain (5 MB)…</p>
+        <p class="lede"><a href="#ledger">Compare landing sites for your date</a><a href="#above">How far a landing can slip</a></p>
+      </div>
+      <canvas id="pole" class="pole-cv" tabindex="0" role="img" aria-label="South polar terrain with real shadows"></canvas>
+    </div>
+  </section>
+
   <section class="top wrap" aria-labelledby="headline">
-    <h1 id="headline" class="headline">Loading NASA ephemeris…</h1>
+    <h2 id="headline" class="headline">Loading NASA ephemeris…</h2>
     <p class="sub" id="subline">Drag the bracket along the year, or set a date. Gold is sunlight, blue is the link to Earth.</p>
 
-    <p class="lede"><a href="#above">See how far a landing can slip near the south pole</a></p>
 
     <form class="setup" onsubmit="return false">
       <label class="ctl"><span>Landing date, UTC</span>
