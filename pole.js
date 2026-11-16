@@ -111,7 +111,7 @@ export function initPole({ canvas, slider, clock, play, read, getTerrain, getSit
     for (const km of [50]) { ctx.beginPath(); ctx.arc(cx, cx, rad * km / 100, 0, 7); ctx.stroke(); }
     ctx.setLineDash([]);
     ctx.fillStyle = css("space-ink", 0.55); ctx.font = `${12 * scale}px ${FONT}`; ctx.textAlign = "left";
-    ctx.fillText("50 km", cx + rad / 2 + 5 * scale, cx - 5 * scale); ctx.fillText("100 km", cx + rad - 52 * scale, cx - 5 * scale);
+    ctx.fillText("50 km", cx + rad / 2 + 5 * scale, cx - 5 * scale);
     ctx.strokeStyle = css("space-ink", 0.7); ctx.beginPath(); ctx.moveTo(cx - 6 * scale, cx); ctx.lineTo(cx + 6 * scale, cx); ctx.moveTo(cx, cx - 6 * scale); ctx.lineTo(cx, cx + 6 * scale); ctx.stroke();
     const tick = (dx, dy, color, label) => {   // map direction of a body: horizontal part of its direction (map +x = ME y, +y = ME x)
       const a = Math.hypot(dx, dy) || 1, ux = dx / a, uy = -dy / a;
@@ -137,6 +137,7 @@ export function initPole({ canvas, slider, clock, play, read, getTerrain, getSit
       ctx.strokeStyle = css("space", 0.8); ctx.lineWidth = 3 * scale; ctx.strokeText(s.name, px + (right ? 11 : -11) * scale, py + 4 * scale); ctx.lineWidth = 1.5 * scale;
       ctx.fillText(s.name, px + (right ? 11 : -11) * scale, py + 4 * scale);
     }
+    window.dispatchEvent(new CustomEvent('poletime', { detail: t }));
     clock.textContent = fmt(t);
     const el = Math.asin(-S[2]) / DEG;
     const lit = lines.filter(l => l[1]).map(l => l[0].name), dark = lines.filter(l => !l[1]).map(l => l[0].name);
