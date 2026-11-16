@@ -3,7 +3,7 @@
 // through the elevation map, so a ridge shades what is really behind it. Nothing here is a texture or an effect.
 import { vectorsAt, skyAt, maskAt, R_MOON } from "./engine.js";
 
-const DEG = Math.PI / 180, R = R_MOON * 1000, BASE = 1737400, HALF = 150000;   // 150 km from the pole to the rim of the disc
+const DEG = Math.PI / 180, R = R_MOON * 1000, BASE = 1737400, HALF = 100000;   // 100 km from the pole to the rim of the disc (the extent of the relief image)
 const DAY = 86400000, HOUR = 3600000, SPAN_H = 720;                            // slider: 30 days, hourly (about one lunar day)
 
 const rgbCache = new Map();
@@ -23,6 +23,7 @@ const unit = v => { const n = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / 
 
 // Per-pixel ground point, surface normal and height for one grid size; built once, reused for every frame.
 const grids = new Map();
+let RELIEF = null;   // LRO hillshade image (grey), 200 km square, same orientation as the map
 function gridFor(T, G) {
   if (grids.has(G)) return grids.get(G);
   const cell = 2 * HALF / G, n = G * G;
@@ -40,6 +41,7 @@ function gridFor(T, G) {
     // Surface texture: the same terrain lit from a fixed, higher angle, which is what makes craters read as craters.
     const h0 = [1, 0.35, 0], hd = h0[0] * p[0] + h0[1] * p[1] + h0[2] * p[2], hh = unit([h0[0] - hd * p[0], h0[1] - hd * p[1], h0[2] - hd * p[2]]), se = Math.sin(38 * DEG), ce = Math.cos(38 * DEG);
     const raw = (nr[0] * (p[0] * se + hh[0] * ce) + nr[1] * (p[1] * se + hh[1] * ce) + nr[2] * (p[2] * se + hh[2] * ce)); HS[o] = Math.max(0, Math.min(1, 0.55 + 3.4 * (raw - se)));
+    if (RELIEF) { const u = Math.min(RELIEF.w - 1, Math.max(0, Math.floor((x + HALF) / (2 * HALF) * RELIEF.w))), v = Math.min(RELIEF.h - 1, Math.max(0, Math.floor((HALF - y) / (2 * HALF) * RELIEF.h))); HS[o] = RELIEF.d[(v * RELIEF.w + u) * 4] / 255; }
   }
   const g = { G, cell, P, N, H, M, HS }; grids.set(G, g); return g;
 }
@@ -65,10 +67,10 @@ function shade(T, g, S, out) {
       }
     }
     let r, gg, b;
-    const tex = 0.42 + 0.58 * HS[o];                    // regolith brightness from the terrain's own shape
+    const tex = 0.34 + 0.66 * HS[o];                    // regolith brightness from the terrain's own shape
     if (shadowed) {
       const t = Math.max(0, Math.min(1, (H[o] + 6000) / 14000)) * 0.5;  // faint earthshine: the dark side still shows its craters
-      const e = 0.2 * tex + t * 0.1;
+      const e = 0.3 * tex + t * 0.05;
       r = dk[0] + amb[0] * e * 1.6; gg = dk[1] + amb[1] * e * 1.7; b = dk[2] + amb[2] * e * 2.1;
     } else {
       const v = Math.min(1, nd / 0.07), br = tex * (0.72 + 0.28 * v), hotT = Math.min(1, v * 0.3);
@@ -106,10 +108,10 @@ export function initPole({ canvas, slider, clock, play, read, getTerrain, getSit
     // rim, scale rings, pole, and where the Sun and Earth stand
     ctx.lineWidth = scale; ctx.strokeStyle = css("space-muted", 0.5); ctx.beginPath(); ctx.arc(cx, cx, rad, 0, 7); ctx.stroke();
     ctx.strokeStyle = css("space-ink", 0.16); ctx.setLineDash([2 * scale, 6 * scale]);
-    for (const km of [50, 100]) { ctx.beginPath(); ctx.arc(cx, cx, rad * km / 150, 0, 7); ctx.stroke(); }
+    for (const km of [50]) { ctx.beginPath(); ctx.arc(cx, cx, rad * km / 100, 0, 7); ctx.stroke(); }
     ctx.setLineDash([]);
     ctx.fillStyle = css("space-ink", 0.55); ctx.font = `${12 * scale}px ${FONT}`; ctx.textAlign = "left";
-    ctx.fillText("50 km", cx + rad / 3 + 5 * scale, cx - 5 * scale); ctx.fillText("100 km", cx + rad * 2 / 3 + 5 * scale, cx - 5 * scale);
+    ctx.fillText("50 km", cx + rad / 2 + 5 * scale, cx - 5 * scale); ctx.fillText("100 km", cx + rad - 52 * scale, cx - 5 * scale);
     ctx.strokeStyle = css("space-ink", 0.7); ctx.beginPath(); ctx.moveTo(cx - 6 * scale, cx); ctx.lineTo(cx + 6 * scale, cx); ctx.moveTo(cx, cx - 6 * scale); ctx.lineTo(cx, cx + 6 * scale); ctx.stroke();
     const tick = (dx, dy, color, label) => {   // map direction of a body: horizontal part of its direction (map +x = ME y, +y = ME x)
       const a = Math.hypot(dx, dy) || 1, ux = dx / a, uy = -dy / a;
@@ -175,6 +177,7 @@ export function initPole({ canvas, slider, clock, play, read, getTerrain, getSit
     playing = true; last = performance.now(); play.textContent = "Pause"; raf = requestAnimationFrame(tick);
   });
   new ResizeObserver(() => frame()).observe(canvas);
+  const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0); RELIEF = { w: c.width, h: c.height, d: x.getImageData(0, 0, c.width, c.height).data }; grids.clear(); frame(); }; im.src = 'data/relief.png';
   frame();
   getTerrain().then(t => { T = t; onStatus && onStatus(""); frame(); }, e => { onStatus && onStatus("Terrain failed to load: " + e.message); });
   return {
