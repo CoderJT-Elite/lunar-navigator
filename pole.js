@@ -26,7 +26,7 @@ const grids = new Map();
 function gridFor(T, G) {
   if (grids.has(G)) return grids.get(G);
   const cell = 2 * HALF / G, n = G * G;
-  const P = new Float32Array(n * 3), N = new Float32Array(n * 3), H = new Float32Array(n), M = new Uint8Array(n), d = cell / 2;
+  const P = new Float32Array(n * 3), N = new Float32Array(n * 3), H = new Float32Array(n), HS = new Float32Array(n), M = new Uint8Array(n), d = cell / 2;
   for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) {
     const x = (i + 0.5 - G / 2) * cell, y = (G / 2 - j - 0.5) * cell, o = j * G + i;
     if (x * x + y * y > HALF * HALF) continue;
@@ -37,12 +37,15 @@ function gridFor(T, G) {
     const nr = unit([p[0] - gx * tx[0] - gy * ty[0], p[1] - gx * tx[1] - gy * ty[1], p[2] - gx * tx[2] - gy * ty[2]]);
     const r = BASE + h; P[o * 3] = p[0] * r; P[o * 3 + 1] = p[1] * r; P[o * 3 + 2] = p[2] * r;
     N[o * 3] = nr[0]; N[o * 3 + 1] = nr[1]; N[o * 3 + 2] = nr[2]; H[o] = h; M[o] = 1;
+    // Surface texture: the same terrain lit from a fixed, higher angle, which is what makes craters read as craters.
+    const h0 = [1, 0.35, 0], hd = h0[0] * p[0] + h0[1] * p[1] + h0[2] * p[2], hh = unit([h0[0] - hd * p[0], h0[1] - hd * p[1], h0[2] - hd * p[2]]), se = Math.sin(38 * DEG), ce = Math.cos(38 * DEG);
+    const raw = (nr[0] * (p[0] * se + hh[0] * ce) + nr[1] * (p[1] * se + hh[1] * ce) + nr[2] * (p[2] * se + hh[2] * ce)); HS[o] = Math.max(0, Math.min(1, 0.55 + 3.4 * (raw - se)));
   }
-  const g = { G, cell, P, N, H, M }; grids.set(G, g); return g;
+  const g = { G, cell, P, N, H, M, HS }; grids.set(G, g); return g;
 }
 
 function shade(T, g, S, out) {
-  const { G, P, N, H, M } = g, lit = rgb("lit"), hot = rgb("lit-hot"), dk = rgb("shade"), amb = rgb("shade-2"), bg = rgb("space");
+  const { G, P, N, H, M, HS } = g, lit = rgb("lit"), hot = rgb("lit-hot"), dk = rgb("shade"), amb = rgb("shade-2"), bg = rgb("space");
   const sx = S[0], sy = S[1], sz = S[2], d = out.data;
   for (let o = 0; o < G * G; o++) {
     const q = o * 4;
@@ -62,12 +65,14 @@ function shade(T, g, S, out) {
       }
     }
     let r, gg, b;
+    const tex = 0.42 + 0.58 * HS[o];                    // regolith brightness from the terrain's own shape
     if (shadowed) {
-      const t = Math.max(0, Math.min(1, (H[o] + 6000) / 14000));        // faint earthshine by height, so basins read in the dark
-      r = dk[0] + (amb[0] - dk[0]) * t; gg = dk[1] + (amb[1] - dk[1]) * t; b = dk[2] + (amb[2] - dk[2]) * t;
+      const t = Math.max(0, Math.min(1, (H[o] + 6000) / 14000)) * 0.5;  // faint earthshine: the dark side still shows its craters
+      const e = 0.2 * tex + t * 0.1;
+      r = dk[0] + amb[0] * e * 1.6; gg = dk[1] + amb[1] * e * 1.7; b = dk[2] + amb[2] * e * 2.1;
     } else {
-      const v = Math.max(0, Math.min(1.1, nd / 0.09)), br = 0.34 + 0.66 * Math.min(1, v), hotT = Math.max(0, v - 0.55) / 0.55;
-      r = (lit[0] + (hot[0] - lit[0]) * hotT) * br; gg = (lit[1] + (hot[1] - lit[1]) * hotT) * br; b = (lit[2] + (hot[2] - lit[2]) * hotT) * br;
+      const v = Math.min(1, nd / 0.07), br = tex * (0.72 + 0.28 * v), hotT = Math.min(1, v * 0.3);
+      r = (lit[0] + (hot[0] - lit[0]) * hotT) * br * 0.98; gg = (lit[1] + (hot[1] - lit[1]) * hotT) * br * 0.98; b = (lit[2] + (hot[2] - lit[2]) * hotT) * br * 0.96;
     }
     d[q] = r; d[q + 1] = gg; d[q + 2] = b; d[q + 3] = 255;
   }
