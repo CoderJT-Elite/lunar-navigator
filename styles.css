@@ -58,13 +58,13 @@ input, select { caret-color: var(--color-ink); }
 .pole-copy { display: grid; gap: var(--space-lg); align-content: center; max-width: 34rem; }
 .pole h1 { font-size: clamp(2.1rem, 3.9vw, 3.4rem); line-height: 1.04; font-weight: 500; letter-spacing: -0.012em; }
 .pole-copy > p:not(.pole-read):not(.lede) { color: var(--color-space-muted); max-width: 46ch; }
-.pole-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm) var(--space-md); }
-.pole-ctl input[type=range] { flex: 1 1 10rem; min-width: 0; accent-color: var(--color-accent); }
-.pole-ctl .clock { margin-left: 0; font-size: var(--text-sm); color: var(--color-space-ink); }
+.pole-ctl { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-sm) var(--space-md); }
+.pole-ctl input[type=range] { width: 100%; min-width: 0; accent-color: var(--color-accent); }
+.pole-ctl .clock { grid-column: 1 / -1; margin-left: 0; width: auto; font-size: var(--text-sm); color: var(--color-space-ink); white-space: nowrap; min-height: 1.5em; font-variant-numeric: tabular-nums; }
 .pole button { background: var(--color-accent); color: var(--color-accent-ink); }
 .pole button:hover { background: var(--color-space-ink); }
 .pole :focus-visible { outline-color: var(--color-accent); }
-.pole-read { font-size: var(--text-sm); color: var(--color-space-ink); min-height: 4.5em; max-width: 46ch; }
+.pole-read { font-size: var(--text-sm); color: var(--color-space-ink); min-height: 6.5em; max-width: 46ch; }
 .pole .lede { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-lg); margin-top: 0; }
 .pole .lede a:hover { text-decoration-color: var(--color-space-ink); }
 .stage { position: relative; width: 100%; max-width: min(100%, calc(100svh - 52px - 2 * var(--space-xl))); aspect-ratio: 1; justify-self: center; }
