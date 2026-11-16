@@ -29,6 +29,8 @@
     <h1 id="headline" class="headline">Loading NASA ephemeris…</h1>
     <p class="sub" id="subline">Drag the bracket along the year, or set a date. Gold is sunlight, blue is the link to Earth.</p>
 
+    <p class="lede"><a href="#above">See how far a landing can slip near the south pole</a></p>
+
     <form class="setup" onsubmit="return false">
       <label class="ctl"><span>Landing date, UTC</span>
         <input type="date" id="date" min="2025-03-01" max="2030-10-31">
@@ -92,8 +94,8 @@
 
   <section class="wrap sec" id="above" aria-labelledby="h-above">
     <div class="sec-head">
-      <h2 id="h-above">Where a lander survives</h2>
-      <p>Every point in this 200 km square around the south pole has its own skyline. Gold marks the points that clear your limits for the whole mission.</p>
+      <h2 id="h-above">How far a landing can slip</h2>
+      <p>Every point in this 200 km square around the south pole has its own skyline. We try every landing day at every point. Gold marks where landing days still work, and the ring is the best point.</p>
     </div>
     <div class="above">
       <div class="window mapwin">
@@ -102,8 +104,8 @@
       <div class="aside">
         <label class="inline">Show
           <select id="layer">
-            <option value="survive">Where a lander survives</option>
-            <option value="slip">Slip margin: days you can slip</option>
+            <option value="slip" selected>Slip margin: days you can slip</option>
+            <option value="survive">Where a lander survives on the chosen day</option>
             <option value="sunwin">Sunlight over the mission</option>
             <option value="darkwin">Longest dark over the mission</option>
             <option value="earthwin">Earth link over the mission</option>
@@ -115,6 +117,7 @@
           <select id="span"><option value="60">120 km</option><option value="150" selected>300 km</option><option value="300">600 km</option></select>
         </label>
         <button id="loadTerrain" type="button" hidden>Load terrain (5 MB)</button>
+        <dl class="mapfigs" id="mapFigs" hidden></dl>
         <p class="mapnote" id="mapNote" role="status">Scroll here to load the polar data.</p>
         <p class="small">Hover a cell for its numbers. Click to add that spot as a site.</p>
       </div>

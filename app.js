@@ -139,6 +139,7 @@ function render() {
 let L = [], ledgerKey = "", axisCv = null;
 function buildLedger(rows) {
   const host = $("#rows"); host.textContent = ""; L = [];
+  guide = null;
   if (!rows.length) { const p = document.createElement("p"); p.className = "empty"; p.textContent = "No site chosen. Open “Add or change sites” below and tick up to five."; host.append(p); axisCv = null; return; }
   const ax = document.createElement("div"); ax.className = "row axis"; ax.setAttribute("aria-hidden", "true");
   ax.innerHTML = '<div></div><div class="line"><canvas></canvas></div><div></div>'; host.append(ax); axisCv = $("canvas", ax);
@@ -155,6 +156,14 @@ function buildLedger(rows) {
     host.append(el);
     L.push({ site, el, cv, figs: [...el.querySelectorAll(".fig b")], verdict: $(".verdict", el) });
   }
+  guide = document.createElement("div"); guide.className = "guide"; guide.setAttribute("aria-hidden", "true"); guide.append(document.createElement("span")); host.append(guide);
+}
+// One thin line runs down every row at the day under the pointer, so sites can be read against each other.
+let guide = null;
+function moveGuide(cv, c) {
+  if (!guide) return; const gm = cv._g, r = cv.getBoundingClientRect(), h = $("#rows").getBoundingClientRect();
+  guide.style.transform = `translateX(${r.left - h.left + (c + 0.5) / gm.cols * r.width}px)`; guide.style.opacity = 1;
+  $("span", guide).textContent = fmtDate(gm.start + c * DAY);
 }
 function updateLedger() {
   const rows = state.selected.map(id => state.byId.get(id)).filter(Boolean), key = rows.map(r => r.id).join(",");
@@ -238,10 +247,12 @@ function lineEvents(cv) {
   cv.addEventListener("pointermove", ev => {
     if (drag) { move(ev); return; }
     const c = colAt(cv, ev), gm = cv._g; if (c === null) return;
+    moveGuide(cv, c);
     const d = gm.data[c], n = $("#hoverNote");
     n.textContent = `${gm.site.name}, landing ${fmtDate(gm.start + c * DAY)}: sun ${d.m.sun.toFixed(0)}%, longest dark ${hours(d.m.dark)}, Earth link ${d.m.earth.toFixed(0)}%. ${d.v.ok ? "Works." : d.v.text + "."}`;
   });
   const end = () => { drag = false; };
+  cv.addEventListener("pointerleave", () => { if (guide && !drag) guide.style.opacity = 0; });
   cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
   cv.addEventListener("keydown", ev => {
     const k = { ArrowLeft: -1, ArrowRight: 1, PageUp: -7, PageDown: 7 }[ev.key]; if (!k) return;
@@ -277,7 +288,7 @@ function drawPano(site, k) {
   for (let a = 0; a <= 360; a++) g.lineTo(X(a), Y(site.mask ? maskAt(site.mask, a) : 0));
   g.lineTo(X(360), Y(ymin) + 40); g.closePath();
   const gr = g.createLinearGradient(0, Y(maxMask), 0, H); gr.addColorStop(0, rgba("space-ink", 0.24)); gr.addColorStop(1, rgba("space-ink", 0.05)); g.fillStyle = gr; g.fill();
-  g.strokeStyle = rgba("space-ink", 0.7); g.lineWidth = 1.4; g.beginPath();
+  g.strokeStyle = rgba("space-ink", 0.85); g.lineWidth = 2; g.beginPath();
   for (let a = 0; a <= 360; a++) { const x = X(a), y = Y(site.mask ? maskAt(site.mask, a) : 0); a ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
   g.font = "12px " + FONT; g.textAlign = "left"; g.textBaseline = "middle";
   const stepEl = polar ? (ymax > 20 ? 5 : 2) : 15;
@@ -339,7 +350,7 @@ function fillReadout(site, k, t) {
     ["Skyline behind the Sun", `${sm.toFixed(2)}°`, sunUp ? `The Sun clears it by ${(k.sun.el + k.sunRadius - sm).toFixed(2)}°.` : `Sun ${(sm - k.sun.el - k.sunRadius).toFixed(2)}° below the skyline.`],
     ["Earth shades the Sun", k.eclipse === 2 ? "Total" : k.eclipse === 1 ? "Partial" : "No", k.eclipse ? `${(k.sunFraction * 100).toFixed(0)}% of the Sun is visible.` : "A lunar eclipse seen from the surface; solar power drops while it lasts."],
   ];
-  const dl = $("#readout"); dl.textContent = "";
+  const dl = $("#readout"); dl.textContent = "";  // four readings, one per column
   for (const [a, b, c] of items) { const d = document.createElement("div"), dt = document.createElement("dt"), dd = document.createElement("dd"), sm2 = document.createElement("small"); dt.textContent = a; dd.textContent = b; sm2.textContent = c; dd.append(sm2); d.append(dt, dd); dl.append(d); }
 }
 
@@ -510,6 +521,7 @@ async function renderSurvival(layer) {
   if (layer === "slip") {
     note.textContent = "";
     const wide = S.run.reduce((n, r) => n + (r >= 14 ? 1 : 0), 0), exact = F.ok.reduce((n, v) => n + v, 0);
+    setFigs(bestP >= 0 ? [["days a landing can slip at the best point", String(S.run[bestP]), true], ["km² work on the chosen day", exact.toLocaleString()], ["km² survive a two-week slip", wide.toLocaleString()]] : null);
     if (bestP >= 0) {
       const b = document.createElement("b"); b.textContent = `${S.run[bestP]} landing days in a row`;
       note.append(b, ` work at the best point (ringed, ${state.best.lat.toFixed(2)}°, ${state.best.lon.toFixed(2)}°E), so a ${state.dur}-day mission launched from ${fmtDate(state.date)} can slip that long and still meet your limits. Only ${exact.toLocaleString()} km² work on ${fmtDate(state.date)} itself, and ${wide.toLocaleString()} km² can absorb a slip of two weeks or more.`);
@@ -520,6 +532,7 @@ async function renderSurvival(layer) {
     state.slipNote = true;
   } else if (layer === "survive") {
     note.textContent = "";
+    setFigs(nOk ? [["km² survive the whole mission", nOk.toLocaleString(), true], ["share of this patch", pct + "%"], ["hours of dark at the best point", String(F.dark[bestP])]] : null);
     if (nOk) {
       const b = document.createElement("b"); b.textContent = `${nOk.toLocaleString()} km² (${pct}%)`;
       note.append(b, ` of this 200 km patch survives ${state.dur} days from ${fmtDate(state.date)} with a ${state.bat} h battery and a ${state.link}% link. Best point (ringed): ${state.best.lat.toFixed(2)}°, ${state.best.lon.toFixed(2)}°E, sun ${F.sun[bestP].toFixed(0)}%, longest dark ${hours(F.dark[bestP])}, Earth ${F.earth[bestP].toFixed(0)}%.`);
@@ -530,7 +543,11 @@ async function renderSurvival(layer) {
       const b = document.createElement("b"); b.textContent = "No point";
       note.append(b, ` in this 200 km patch survives ${state.dur} days from ${fmtDate(state.date)} with those limits. Try another date, a bigger battery, or a lower link requirement.`);
     }
-  } else note.textContent = "Each cell is a 1 km grid point with its own true skyline. Hover for numbers; click to add a spot as a site.";
+  } else { setFigs(null); note.textContent = "Each cell is a 1 km grid point with its own true skyline. Hover for numbers; click to add a spot as a site."; }
+}
+function setFigs(list) {
+  const dl = $("#mapFigs"); dl.textContent = ""; dl.hidden = !list; if (!list) return;
+  for (const [label, val, gold] of list) { const d = document.createElement("div"), dt = document.createElement("dt"), dd = document.createElement("dd"); if (gold) d.className = "gold"; dt.textContent = label; dd.textContent = val; d.append(dt, dd); dl.append(d); }
 }
 function cellLatLon(i, j) {
   const N = SV.N, R = R_MOON * 1000, x = (i + .5 - N / 2) * SV.PX, y = (N / 2 - j - .5) * SV.PX, q = (x * x + y * y) / (4 * R * R), pz = (q - 1) / (q + 1), k = 1 / (R * (q + 1));
@@ -683,7 +700,7 @@ function wire() {
   // the polar data is 8 MB, so it loads when the map section is near the screen
   const sec = $("#above");
   if ("IntersectionObserver" in window) {
-    new IntersectionObserver((en, ob) => { if (en.some(e => e.isIntersecting)) { mapSeen = true; ob.disconnect(); scheduleMap(true); } }, { rootMargin: "400px 0px" }).observe(sec);
+    new IntersectionObserver((en, ob) => { if (en.some(e => e.isIntersecting)) { mapSeen = true; ob.disconnect(); scheduleMap(true); } }, { rootMargin: "1500px 0px" }).observe(sec);
   } else { mapSeen = true; scheduleMap(true); }
   let rz = 0; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(render, 120); });
 }
