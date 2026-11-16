@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lunar Landing Site Navigator</title>
+<meta name="description" content="Pick a Moon landing date and see how long the lander sits in the dark. Sun and Earth over real NASA terrain, for any site, March 2025 to November 2030.">
+<meta property="og:title" content="Lunar Landing Site Navigator">
+<meta property="og:description" content="If the landing slips, what happens to power and the link home? Sun and Earth over real LRO terrain. Built for NASA Space Apps 2026.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23151618'/%3E%3Crect x='3' y='11' width='26' height='10' fill='%23e8b923'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/Antonio-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#ledger">Skip to the comparison</a>
+
+<header class="bar">
+  <div class="wrap bar-in">
+    <p class="wordmark">Lunar Landing Site Navigator</p>
+    <nav class="bar-nav" aria-label="Sections">
+      <a href="#ledger">Compare</a><a href="#surface">Sky</a><a href="#above">Map</a><a href="#method">Method</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="top wrap" aria-labelledby="headline">
+    <h1 id="headline" class="headline">Loading NASA ephemeris…</h1>
+    <p class="sub" id="subline">Drag the bracket along the year, or set a date. Gold is sunlight, blue is the link to Earth.</p>
+
+    <form class="setup" onsubmit="return false">
+      <label class="ctl"><span>Landing date, UTC</span>
+        <input type="date" id="date" min="2025-03-01" max="2030-10-31">
+      </label>
+      <label class="ctl"><span>Mission length <b id="durOut">7 days</b></span>
+        <input type="range" id="dur" min="2" max="30" value="7">
+      </label>
+      <label class="ctl"><span>Battery bridges <b id="batOut">60 h</b> of dark</span>
+        <input type="range" id="bat" min="0" max="400" step="2" value="60">
+      </label>
+      <label class="ctl"><span>Earth link needed <b id="linkOut">40%</b> of the time</span>
+        <input type="range" id="link" min="0" max="100" step="5" value="40">
+      </label>
+      <label class="ctl"><span>Earth above <b id="elOut">5°</b> to count</span>
+        <input type="range" id="minel" min="0" max="20" step="1" value="5">
+      </label>
+    </form>
+  </section>
+
+  <section class="wrap ledgerwrap" id="ledger" aria-label="Sites compared">
+    <div class="legend" aria-hidden="true">
+      <span><i class="k sun"></i>Sun in view</span>
+      <span><i class="k earth"></i>Earth link</span>
+      <span><i class="k go"></i>Landing days that work</span>
+      <span><i class="k dark"></i>Dark longer than the battery</span>
+    </div>
+    <div class="ledger" id="rows" role="list"></div>
+    <details class="picker" id="picker">
+      <summary>Add or change sites <span id="count"></span></summary>
+      <div class="picker-in">
+        <ul class="sites" id="siteList"></ul>
+        <form id="custom" class="custom">
+          <p class="small"><b>Your own site.</b> Negative latitude is south. South of 80°S the skyline comes from NASA terrain (5 MB, loaded when needed); elsewhere the horizon is assumed flat.</p>
+          <label>Latitude <input id="clat" inputmode="decimal" placeholder="-89.44"></label>
+          <label>East longitude <input id="clon" inputmode="decimal" placeholder="222.6"></label>
+          <button type="submit">Add site</button>
+          <p class="small" id="chelp" role="status"></p>
+        </form>
+      </div>
+    </details>
+    <p class="hover" id="hoverNote" role="status"></p>
+  </section>
+
+  <section class="wrap sec" id="surface" aria-labelledby="h-surface">
+    <div class="sec-head">
+      <h2 id="h-surface">What the lander sees</h2>
+      <p>The skyline is real LRO terrain. Slide through the mission and watch the Sun and Earth cross it.</p>
+    </div>
+    <div class="skybar">
+      <label class="inline">Site <select id="skySite"></select></label>
+      <button id="play" type="button">Play</button>
+      <input type="range" id="tscrub" min="0" max="1000" value="0" aria-label="Time within the mission">
+      <output id="skyClock" class="clock"></output>
+    </div>
+    <div class="window">
+      <canvas id="pano" height="340" role="img" aria-label="Horizon panorama showing the Sun and Earth"></canvas>
+      <canvas id="ribbon" height="104" role="img" aria-label="Sunlight and Earth link over the mission"></canvas>
+    </div>
+    <dl class="read" id="readout"></dl>
+  </section>
+
+  <section class="wrap sec" id="above" aria-labelledby="h-above">
+    <div class="sec-head">
+      <h2 id="h-above">Where a lander survives</h2>
+      <p>Every point in this 200 km square around the south pole has its own skyline. Gold marks the points that clear your limits for the whole mission.</p>
+    </div>
+    <div class="above">
+      <div class="window mapwin">
+        <canvas id="map" width="760" height="760" role="img" aria-label="South polar map of where a lander survives"></canvas>
+      </div>
+      <div class="aside">
+        <label class="inline">Show
+          <select id="layer">
+            <option value="survive">Where a lander survives</option>
+            <option value="slip">Slip margin: days you can slip</option>
+            <option value="sunwin">Sunlight over the mission</option>
+            <option value="darkwin">Longest dark over the mission</option>
+            <option value="earthwin">Earth link over the mission</option>
+            <option value="sunnow">Sunlight at the Sky moment</option>
+            <option value="earthnow">Earth in view at the Sky moment</option>
+          </select>
+        </label>
+        <label class="inline" id="spanLabel" hidden>Width
+          <select id="span"><option value="60">120 km</option><option value="150" selected>300 km</option><option value="300">600 km</option></select>
+        </label>
+        <button id="loadTerrain" type="button" hidden>Load terrain (5 MB)</button>
+        <p class="mapnote" id="mapNote" role="status">Scroll here to load the polar data.</p>
+        <p class="small">Hover a cell for its numbers. Click to add that spot as a site.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap sec method" id="method" aria-labelledby="h-method">
+    <div class="sec-head">
+      <h2 id="h-method">How far to trust it</h2>
+    </div>
+    <dl class="proof">
+      <div><dt>Where the Sun and Earth are</dt><dd>NASA/JPL Horizons, hourly, March 2025 to November 2030. We checked 600 random moments at ten sites against live Horizons. The worst elevation error was 0.00003°.</dd></div>
+      <div><dt>What the skyline is</dt><dd>NASA’s LRO laser-altimeter terrain at 80 m. The sunniest ridge point this tool found (−89.44°, 222.6°E) is lit 93% of 2027 with a 168-day unbroken stretch. <a href="https://ntrs.nasa.gov/citations/20120010094">Published work</a> puts the best rim spot near 240 days, so ours is a less extreme case on the same ridge. We have not pinned down why.</dd></div>
+      <div><dt>What it does not do</dt><dd>Sunlight and line of sight only: no heat, dust or slope under the lander. Terrain exists south of 80°S, so every other site assumes a flat horizon. Antennas and arrays are taken as 2 m up.</dd></div>
+    </dl>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <p>Team Fourteen Days Dark, NASA Space Apps 2026, challenge: Lunar Landing Site Navigator. Not affiliated with NASA. Written with AI assistance (Claude Code); every figure is computed from NASA data and covered by a test.</p>
+</footer>
+<script type="module" src="app.js"></script>
+</body>
+</html>
