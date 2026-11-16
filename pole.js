@@ -97,7 +97,7 @@ export function initPole({ canvas, slider, clock, play, read, getTerrain, getSit
     ctx.fillStyle = css("space"); ctx.fillRect(0, 0, w, w);
     const cx = w / 2, rad = w * 0.5 - 4 * scale;
     if (T) {
-      const G = fast ? 210 : 300, g = gridFor(T, G);
+      const G = 250, g = gridFor(T, G);
       if (off.width !== G) { off.width = G; off.height = G; }
       const img = offCtx.createImageData(G, G); shade(T, g, S, img); offCtx.putImageData(img, 0, 0);
       ctx.save(); ctx.beginPath(); ctx.arc(cx, cx, rad, 0, 7); ctx.clip(); ctx.imageSmoothingQuality = "high";

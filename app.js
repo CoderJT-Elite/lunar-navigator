@@ -1,7 +1,7 @@
 import { setEphemeris, ephemerisRange, vectorsAt, siteFrame, skyAt, maskAt, R_MOON, R_SUN } from "./engine.js";
 import { Terrain, unpack } from "./terrain.js";
-import { initPole } from "./pole.js";
-import { initMoon } from "./moon.js";
+import { initPole } from "./pole.js?v=4";
+import { initMoon } from "./moon.js?v=4";
 let pole = null;
 
 const $ = (s, el = document) => el.querySelector(s);

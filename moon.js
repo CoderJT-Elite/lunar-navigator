@@ -15,7 +15,7 @@ export function initMoon({ canvas }) {
   function schedule() { if (busy || t === null) return; busy = true; requestAnimationFrame(() => { try { draw(); } finally { busy = false; } }); }
   function draw() {
     if (!tex) return;
-    const M = fast ? 260 : 560; if (off.width !== M) { off.width = M; off.height = M; }
+    const M = 440; if (off.width !== M) { off.width = M; off.height = M; }
     const out = octx.createImageData(M, M);
     const v = vectorsAt(t), m = Math.hypot(v[0], v[1], v[2]), S = [v[0] / m, v[1] / m, v[2] / m], d = out.data, R = M / 2 - 3;
     for (let j = 0; j < M; j++) for (let i = 0; i < M; i++) {
